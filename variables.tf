@@ -36,7 +36,7 @@ variable "location" {
 variable "server_type" {
   description = "Hetzner server type (e.g. cx22, cax11)"
   type        = string
-  default     = "cx22"
+  default     = "cpx42"
 }
 
 variable "vm_count" {

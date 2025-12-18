@@ -21,6 +21,8 @@ packages:
   - zip
   - unzip
   - docker.io
+  - docker-compose-v2
+  - docker-buildx
   - ufw
   - fail2ban
 
@@ -115,9 +117,14 @@ runcmd:
     ]
 
   # Ensure mise-installed tools are in the PATH for the agent installation and future shells
-  - [bash, -c, "echo 'export MISE_DATA_DIR=/opt/mise' >> /etc/environment"]
-  - [bash, -c, "echo 'export MISE_CONFIG_DIR=/etc/mise' >> /etc/environment"]
-  - [bash, -c, 'echo ''PATH="/opt/mise/shims:$PATH"'' >> /etc/environment']
+  # NOTE: /etc/environment does not expand variables like $PATH; write a fully expanded PATH.
+  - [bash, -c, "echo 'MISE_DATA_DIR=/opt/mise' >> /etc/environment"]
+  - [bash, -c, "echo 'MISE_CONFIG_DIR=/etc/mise' >> /etc/environment"]
+  - [
+      bash,
+      -c,
+      'echo ''PATH="/opt/mise/shims:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"'' >> /etc/environment',
+    ]
 
   - [bash, -c, "systemctl enable --now docker || true"]
   - [bash, -c, "systemctl enable --now fail2ban || true"]
