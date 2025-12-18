@@ -1,0 +1,80 @@
+#cloud-config
+package_update: true
+package_upgrade: true
+ssh_pwauth: false
+
+users:
+  - name: azureuser
+    groups: sudo,docker
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    ssh_authorized_keys:
+      - ${ssh_public_key}
+
+packages:
+  - curl
+  - git
+  - jq
+  - docker.io
+  - ufw
+
+write_files:
+  - path: /etc/azdo/pat
+    permissions: '0600'
+    owner: root:root
+    content: |
+      ${azure_pat}
+
+  - path: /opt/azdo/install_agents.sh
+    permissions: '0755'
+    owner: root:root
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+
+      ORG_URL="${azure_org_url}"
+      POOL="${azure_agent_pool}"
+      PAT_FILE="/etc/azdo/pat"
+      AGENT_VERSION="${azdo_agent_version}"
+      AGENT_PREFIX="${agent_name_prefix}"
+      AGENT_COUNT=${agents_per_vm}
+      BASE_DIR="/opt/azdo"
+
+      mkdir -p "${BASE_DIR}"
+      chmod 750 "${BASE_DIR}"
+
+      for i in $(seq 1 ${agents_per_vm}); do
+        AGENT_DIR="${BASE_DIR}/agent${i}"
+        AGENT_NAME="${AGENT_PREFIX}-$(hostname)"
+        if [ ${agents_per_vm} -gt 1 ]; then
+          AGENT_NAME="${AGENT_NAME}-${i}"
+        fi
+
+        rm -rf "${AGENT_DIR}"
+        mkdir -p "${AGENT_DIR}"
+        cd "${AGENT_DIR}"
+
+        curl -fsSL -o agent.tar.gz "https://vstsagentpackage.azureedge.net/agent/${azdo_agent_version}/vsts-agent-linux-x64-${azdo_agent_version}.tar.gz"
+        tar -zxf agent.tar.gz
+        rm agent.tar.gz
+
+        export AGENT_ALLOW_RUNASROOT=1
+        ./config.sh \
+          --unattended \
+          --url "${azure_org_url}" \
+          --auth pat \
+          --token "$(cat ${PAT_FILE})" \
+          --pool "${azure_agent_pool}" \
+          --agent "${AGENT_NAME}" \
+          --acceptTeeEula \
+          --replace
+
+        ./svc.sh install
+        ./svc.sh start
+      done
+
+runcmd:
+  - [ bash, -c, "ufw allow OpenSSH || true" ]
+  - [ bash, -c, "ufw --force enable || true" ]
+  - [ bash, -c, "usermod -aG docker azureuser || true" ]
+  - [ bash, -c, "/opt/azdo/install_agents.sh" ]
