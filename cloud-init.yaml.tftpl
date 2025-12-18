@@ -44,19 +44,19 @@ write_files:
       AGENT_PREFIX="${agent_name_prefix}"
       BASE_DIR="/opt/azdo"
 
-      mkdir -p "${BASE_DIR}"
-      chmod 750 "${BASE_DIR}"
+      mkdir -p "$${BASE_DIR}"
+      chmod 750 "$${BASE_DIR}"
 
       for i in $(seq 1 ${agents_per_vm}); do
-        AGENT_DIR="${BASE_DIR}/agent${i}"
-        AGENT_NAME="${AGENT_PREFIX}-$(hostname)"
+        AGENT_DIR="$${BASE_DIR}/agent$${i}"
+        AGENT_NAME="$${AGENT_PREFIX}-$(hostname)"
         if [ ${agents_per_vm} -gt 1 ]; then
-          AGENT_NAME="${AGENT_NAME}-${i}"
+          AGENT_NAME="$${AGENT_NAME}-$${i}"
         fi
 
-        rm -rf "${AGENT_DIR}"
-        mkdir -p "${AGENT_DIR}"
-        cd "${AGENT_DIR}"
+        rm -rf "$${AGENT_DIR}"
+        mkdir -p "$${AGENT_DIR}"
+        cd "$${AGENT_DIR}"
 
         curl -fsSL -o agent.tar.gz "https://vstsagentpackage.azureedge.net/agent/${azdo_agent_version}/vsts-agent-linux-x64-${azdo_agent_version}.tar.gz"
         tar -zxf agent.tar.gz
@@ -67,9 +67,9 @@ write_files:
           --unattended \
           --url "${azure_org_url}" \
           --auth pat \
-          --token "$(cat ${PAT_FILE})" \
+          --token "$(cat $${PAT_FILE})" \
           --pool "${azure_agent_pool}" \
-          --agent "${AGENT_NAME}" \
+          --agent "$${AGENT_NAME}" \
           --acceptTeeEula \
           --replace
 
