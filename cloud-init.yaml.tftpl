@@ -7,7 +7,7 @@ users:
   - name: azureuser
     groups: sudo,docker
     shell: /bin/bash
-    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
     ssh_authorized_keys:
       - ${ssh_public_key}
 
@@ -15,18 +15,24 @@ packages:
   - curl
   - git
   - jq
+  - ca-certificates
+  - gnupg
+  - apt-transport-https
+  - zip
+  - unzip
   - docker.io
   - ufw
+  - fail2ban
 
 write_files:
   - path: /etc/azdo/pat
-    permissions: '0600'
+    permissions: "0600"
     owner: root:root
     content: |
       ${azure_pat}
 
   - path: /opt/azdo/install_agents.sh
-    permissions: '0755'
+    permissions: "0755"
     owner: root:root
     content: |
       #!/bin/bash
@@ -35,9 +41,7 @@ write_files:
       ORG_URL="${azure_org_url}"
       POOL="${azure_agent_pool}"
       PAT_FILE="/etc/azdo/pat"
-      AGENT_VERSION="${azdo_agent_version}"
       AGENT_PREFIX="${agent_name_prefix}"
-      AGENT_COUNT=${agents_per_vm}
       BASE_DIR="/opt/azdo"
 
       mkdir -p "${BASE_DIR}"
@@ -74,7 +78,35 @@ write_files:
       done
 
 runcmd:
-  - [ bash, -c, "ufw allow OpenSSH || true" ]
-  - [ bash, -c, "ufw --force enable || true" ]
-  - [ bash, -c, "usermod -aG docker azureuser || true" ]
-  - [ bash, -c, "/opt/azdo/install_agents.sh" ]
+  - [bash, -c, "ufw allow OpenSSH || true"]
+  - [bash, -c, "ufw --force enable || true"]
+  - [bash, -c, "mkdir -p /etc/apt/keyrings"]
+
+  # Node.js 24 LTS (via NodeSource APT)
+  - [
+      bash,
+      -c,
+      "curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg",
+    ]
+  - [
+      bash,
+      -c,
+      "echo 'deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_24.x nodistro main' > /etc/apt/sources.list.d/nodesource.list",
+    ]
+
+  # .NET SDK 10 (via Microsoft APT)
+  - [
+      bash,
+      -c,
+      "curl -fsSL https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb -o /tmp/packages-microsoft-prod.deb",
+    ]
+  - [bash, -c, "dpkg -i /tmp/packages-microsoft-prod.deb"]
+  - [bash, -c, "rm -f /tmp/packages-microsoft-prod.deb"]
+
+  - [bash, -c, "apt-get update"]
+  - [bash, -c, "apt-get install -y nodejs dotnet-sdk-10.0"]
+
+  - [bash, -c, "systemctl enable --now docker || true"]
+  - [bash, -c, "systemctl enable --now fail2ban || true"]
+  - [bash, -c, "usermod -aG docker azureuser || true"]
+  - [bash, -c, "/opt/azdo/install_agents.sh"]

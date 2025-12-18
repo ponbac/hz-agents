@@ -1,6 +1,6 @@
 # Hetzner Azure DevOps Agents (Terraform + Cloud-init)
 
-Disposable build agents on Hetzner Cloud using Terraform and cloud-init. Ubuntu 24.04 by default, SSH key-only login, optional multiple agents per VM, firewall restricted to SSH only.
+Disposable build agents on Hetzner Cloud using Terraform and cloud-init. Ubuntu 24.04 by default, SSH key-only login, optional multiple agents per VM, firewall restricted to SSH only. Installs Docker, Node.js 24 (APT), and .NET SDK 10 (APT) for running validation pipelines.
 
 ## Files
 - `versions.tf` — Terraform + provider constraints
@@ -25,7 +25,7 @@ Disposable build agents on Hetzner Cloud using Terraform and cloud-init. Ubuntu 
 - `vm_count` = `1`
 - `agents_per_vm` = `1` (set to `2+` to run multiple agents per VM)
 - `agent_name_prefix` = `hz-agent`
-- `azdo_agent_version` = `3.230.0` (pinned)
+- `azdo_agent_version` = `3.248.0` (pinned)
 
 ## Usage
 ```bash
