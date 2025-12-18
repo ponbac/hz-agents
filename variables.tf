@@ -57,8 +57,8 @@ variable "agent_name_prefix" {
   default     = "hz-agent"
 }
 
-variable "ssh_public_key" {
-  description = "SSH public key string to authorize on the VM"
+variable "ssh_key_name" {
+  description = "Name of the existing SSH key in Hetzner Cloud"
   type        = string
 }
 

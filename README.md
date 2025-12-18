@@ -7,7 +7,7 @@ Disposable build agents on Hetzner Cloud using Terraform and cloud-init. Ubuntu 
 - `versions.tf` — Terraform + provider constraints
 - `providers.tf` — Hetzner provider
 - `variables.tf` — configurable inputs
-- `main.tf` — SSH key, firewall, servers with user_data
+- `main.tf` — data lookup for SSH key, firewall, servers with user_data
 - `cloud-init.yaml.tftpl` — cloud-init to install Docker + Azure agent(s)
 - `outputs.tf` — IPs and names
 - `.gitignore` — ignores state, tfvars, etc.
@@ -17,7 +17,7 @@ Disposable build agents on Hetzner Cloud using Terraform and cloud-init. Ubuntu 
 - `hcloud_token` (sensitive) — Hetzner API token
 - `azure_pat` (sensitive) — ADO PAT with Agent Pools (Read & Manage)
 - `azure_org_url` — e.g. `https://dev.azure.com/yourorg`
-- `ssh_public_key` — paste your public key string
+- `ssh_key_name` — name of the existing SSH key in Hetzner Cloud (used to attach to the server and authorize the `azureuser`)
 
 ## Common optional inputs (with defaults)
 
@@ -42,7 +42,7 @@ Create a file named `secret.auto.tfvars` (automatically loaded and ignored by gi
 hcloud_token    = "your_hetzner_token"
 azure_pat       = "your_azure_pat"
 azure_org_url   = "https://dev.azure.com/yourorg"
-ssh_public_key  = "ssh-ed25519 AAAAC3..."
+ssh_key_name    = "your-existing-key-name"
 ```
 
 ### Option B: `.env` file
@@ -70,7 +70,7 @@ tofu init
 TF_VAR_hcloud_token=... \
 TF_VAR_azure_pat=... \
 TF_VAR_azure_org_url="https://dev.azure.com/yourorg" \
-TF_VAR_ssh_public_key="$(cat ~/.ssh/id_ed25519.pub)" \
+TF_VAR_ssh_key_name="my-key" \
 tofu plan
 ```
 
