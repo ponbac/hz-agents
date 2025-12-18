@@ -41,15 +41,19 @@ write_files:
       ORG_URL="${azure_org_url}"
       POOL="${azure_agent_pool}"
       PAT_FILE="/etc/azdo/pat"
-      AGENT_PREFIX="${agent_name_prefix}"
       BASE_DIR="/opt/azdo"
+
+      # Ensure mise tools are available
+      export MISE_DATA_DIR=/opt/mise
+      export MISE_CONFIG_DIR=/etc/mise
+      export PATH="/opt/mise/shims:$PATH"
 
       mkdir -p "$${BASE_DIR}"
       chmod 750 "$${BASE_DIR}"
 
       for i in $(seq 1 ${agents_per_vm}); do
         AGENT_DIR="$${BASE_DIR}/agent$${i}"
-        AGENT_NAME="$${AGENT_PREFIX}-$(hostname)"
+        AGENT_NAME="$(hostname)"
         if [ ${agents_per_vm} -gt 1 ]; then
           AGENT_NAME="$${AGENT_NAME}-$${i}"
         fi
@@ -58,7 +62,20 @@ write_files:
         mkdir -p "$${AGENT_DIR}"
         cd "$${AGENT_DIR}"
 
-        curl -fsSL -o agent.tar.gz "https://vstsagentpackage.azureedge.net/agent/${azdo_agent_version}/vsts-agent-linux-x64-${azdo_agent_version}.tar.gz"
+        DOWNLOAD_URL="https://download.agent.dev.azure.com/agent/${azdo_agent_version}/vsts-agent-linux-x64-${azdo_agent_version}.tar.gz"
+        echo "Downloading agent from: $${DOWNLOAD_URL}"
+        
+        MAX_RETRIES=10
+        RETRY_COUNT=0
+        until curl -fsSL -o agent.tar.gz "$${DOWNLOAD_URL}"; do
+          RETRY_COUNT=$((RETRY_COUNT + 1))
+          if [ $${RETRY_COUNT} -ge $${MAX_RETRIES} ]; then
+            echo "Failed to download agent after $${MAX_RETRIES} attempts. Exiting."
+            exit 1
+          fi
+          echo "Download failed (attempt $${RETRY_COUNT}/$${MAX_RETRIES}), retrying in 5 seconds..."
+          sleep 5
+        done
         tar -zxf agent.tar.gz
         rm agent.tar.gz
 
@@ -78,35 +95,35 @@ write_files:
       done
 
 runcmd:
+  - [bash, -c, "until ping -c 1 google.com; do sleep 2; done"]
   - [bash, -c, "ufw allow OpenSSH || true"]
   - [bash, -c, "ufw --force enable || true"]
-  - [bash, -c, "mkdir -p /etc/apt/keyrings"]
 
-  # Node.js 24 LTS (via NodeSource APT)
+  # Install mise (system-wide)
   - [
       bash,
       -c,
-      "curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg",
+      "curl https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh",
     ]
+
+  # Install Node.js and .NET using mise
+  - [bash, -c, "mkdir -p /etc/mise"]
   - [
       bash,
       -c,
-      "echo 'deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_24.x nodistro main' > /etc/apt/sources.list.d/nodesource.list",
+      "MISE_DATA_DIR=/opt/mise MISE_CONFIG_DIR=/etc/mise /usr/local/bin/mise use --global node@24 dotnet@10",
     ]
 
-  # .NET SDK 10 (via Microsoft APT)
-  - [
-      bash,
-      -c,
-      "curl -fsSL https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb -o /tmp/packages-microsoft-prod.deb",
-    ]
-  - [bash, -c, "dpkg -i /tmp/packages-microsoft-prod.deb"]
-  - [bash, -c, "rm -f /tmp/packages-microsoft-prod.deb"]
-
-  - [bash, -c, "apt-get update"]
-  - [bash, -c, "apt-get install -y nodejs dotnet-sdk-10.0"]
+  # Ensure mise-installed tools are in the PATH for the agent installation and future shells
+  - [bash, -c, "echo 'export MISE_DATA_DIR=/opt/mise' >> /etc/environment"]
+  - [bash, -c, "echo 'export MISE_CONFIG_DIR=/etc/mise' >> /etc/environment"]
+  - [bash, -c, 'echo ''PATH="/opt/mise/shims:$PATH"'' >> /etc/environment']
 
   - [bash, -c, "systemctl enable --now docker || true"]
   - [bash, -c, "systemctl enable --now fail2ban || true"]
   - [bash, -c, "usermod -aG docker azureuser || true"]
-  - [bash, -c, "/opt/azdo/install_agents.sh"]
+  - [
+      bash,
+      -c,
+      'MISE_DATA_DIR=/opt/mise MISE_CONFIG_DIR=/etc/mise PATH="/opt/mise/shims:$PATH" /opt/azdo/install_agents.sh',
+    ]

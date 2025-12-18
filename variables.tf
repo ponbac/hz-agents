@@ -65,5 +65,5 @@ variable "ssh_key_name" {
 variable "azdo_agent_version" {
   description = "Pinned Azure DevOps agent version"
   type        = string
-  default     = "3.248.0"
+  default     = "4.266.2"
 }

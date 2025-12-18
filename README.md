@@ -28,7 +28,7 @@ Disposable build agents on Hetzner Cloud using Terraform and cloud-init. Ubuntu 
 - `vm_count` = `1`
 - `agents_per_vm` = `1` (set to `2+` to run multiple agents per VM)
 - `agent_name_prefix` = `hz-agent`
-- `azdo_agent_version` = `3.248.0` (pinned)
+- `azdo_agent_version` = `4.266.2` (pinned)
 
 ## Usage
 
@@ -77,7 +77,7 @@ tofu plan
 ### Scaling
 
 - More VMs: set `vm_count` (e.g. `TF_VAR_vm_count=3`).
-- More agents per VM: set `agents_per_vm` (e.g. `TF_VAR_agents_per_vm=2`). Agent names become `hz-agent-<hostname>-1..N`.
+- More agents per VM: set `agents_per_vm` (e.g. `TF_VAR_agents_per_vm=2`). Agent names become `<hostname>-1..N` (e.g., `hz-agent-01-1`).
 
 ### Upgrades / refresh
 
@@ -93,3 +93,11 @@ tofu plan
 
 - `tofu fmt`
 - `tofu validate`
+
+## Debugging
+
+To view the cloud-init process after connecting to the VM via SSH, you can follow the output log:
+
+```bash
+sudo tail -f /var/log/cloud-init-output.log
+```
