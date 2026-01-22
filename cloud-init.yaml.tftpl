@@ -45,10 +45,8 @@ write_files:
       PAT_FILE="/etc/azdo/pat"
       BASE_DIR="/opt/azdo"
 
-      # Ensure mise tools are available
-      export MISE_DATA_DIR=/opt/mise
-      export MISE_CONFIG_DIR=/etc/mise
-      export PATH="/opt/mise/shims:$PATH"
+      # Use direct paths to mise-installed tools (bypasses slow shims)
+      export PATH="/opt/mise/installs/dotnet/10.0.102:/opt/mise/installs/node/24.13.0/bin:$PATH"
 
       mkdir -p "$${BASE_DIR}"
       chmod 750 "$${BASE_DIR}"
@@ -108,22 +106,19 @@ runcmd:
       "curl https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh",
     ]
 
-  # Install Node.js and .NET using mise
-  - [bash, -c, "mkdir -p /etc/mise"]
+  # Install Node.js and .NET using mise (pinned versions)
   - [
       bash,
       -c,
-      "MISE_DATA_DIR=/opt/mise MISE_CONFIG_DIR=/etc/mise /usr/local/bin/mise use --global node@24 dotnet@10",
+      "MISE_DATA_DIR=/opt/mise /usr/local/bin/mise install node@24.13.0 dotnet@10.0.102",
     ]
 
-  # Ensure mise-installed tools are in the PATH for the agent installation and future shells
+  # Use direct paths to installed tools (bypasses mise shims which have slow remote lookups)
   # NOTE: /etc/environment does not expand variables like $PATH; write a fully expanded PATH.
-  - [bash, -c, "echo 'MISE_DATA_DIR=/opt/mise' >> /etc/environment"]
-  - [bash, -c, "echo 'MISE_CONFIG_DIR=/etc/mise' >> /etc/environment"]
   - [
       bash,
       -c,
-      'echo ''PATH="/opt/mise/shims:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"'' >> /etc/environment',
+      'echo ''PATH="/opt/mise/installs/dotnet/10.0.102:/opt/mise/installs/node/24.13.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"'' >> /etc/environment',
     ]
 
   - [bash, -c, "systemctl enable --now docker || true"]
@@ -132,5 +127,16 @@ runcmd:
   - [
       bash,
       -c,
-      'MISE_DATA_DIR=/opt/mise MISE_CONFIG_DIR=/etc/mise PATH="/opt/mise/shims:$PATH" /opt/azdo/install_agents.sh',
+      'PATH="/opt/mise/installs/dotnet/10.0.102:/opt/mise/installs/node/24.13.0/bin:$PATH" /opt/azdo/install_agents.sh',
     ]
+
+  # Configure systemd environment for all agent services (they don't read /etc/environment)
+  # Uses direct paths to tools, bypassing mise shims entirely
+  - [
+      bash,
+      -c,
+      'for svc in /etc/systemd/system/vsts.agent.*.service; do [ -f "$svc" ] && mkdir -p "$svc.d" && printf "[Service]\nEnvironment=PATH=/opt/mise/installs/dotnet/10.0.102:/opt/mise/installs/node/24.13.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\n" > "$svc.d/env.conf"; done && systemctl daemon-reload',
+    ]
+
+  # Restart agent services to pick up new environment
+  - [bash, -c, "systemctl restart 'vsts.agent.*' || true"]
