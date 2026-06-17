@@ -6,5 +6,10 @@ terraform {
       source  = "hetznercloud/hcloud"
       version = "~> 1.49.1"
     }
+
+    azuredevops = {
+      source  = "microsoft/azuredevops"
+      version = "~> 1.15.0"
+    }
   }
 }
