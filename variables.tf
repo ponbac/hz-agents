@@ -67,3 +67,27 @@ variable "azdo_agent_version" {
   type        = string
   default     = "4.266.2"
 }
+
+variable "dotnet_version" {
+  description = "Pinned .NET SDK version installed for Azure Pipelines jobs"
+  type        = string
+  default     = "10.0.300"
+}
+
+variable "node_version" {
+  description = "Pinned Node.js version installed for Azure Pipelines jobs"
+  type        = string
+  default     = "24.13.0"
+}
+
+variable "pnpm_version" {
+  description = "Pinned pnpm version prepared through corepack"
+  type        = string
+  default     = "11.5.0"
+}
+
+variable "playwright_version" {
+  description = "Playwright version used to preinstall Chromium system dependencies"
+  type        = string
+  default     = "1.60.0"
+}

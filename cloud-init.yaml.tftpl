@@ -20,6 +20,8 @@ packages:
   - apt-transport-https
   - zip
   - unzip
+  - build-essential
+  - python3
   - docker.io
   - docker-compose-v2
   - docker-buildx
@@ -33,6 +35,44 @@ write_files:
     content: |
       ${azure_pat}
 
+  - path: /etc/profile.d/azdo-tools.sh
+    permissions: "0644"
+    owner: root:root
+    content: |
+      export MISE_DATA_DIR=/opt/mise
+      export DOTNET_ROOT=/opt/mise/installs/dotnet/${dotnet_version}
+      export PATH="/opt/mise/installs/dotnet/${dotnet_version}:/opt/mise/installs/node/${node_version}/bin:/root/.dotnet/tools:$PATH"
+
+  - path: /opt/azdo/configure_agent_environment.sh
+    permissions: "0755"
+    owner: root:root
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+
+      TOOL_PATH="/opt/mise/installs/dotnet/${dotnet_version}:/opt/mise/installs/node/${node_version}/bin:/root/.dotnet/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+      DOTNET_ROOT="/opt/mise/installs/dotnet/${dotnet_version}"
+
+      # /etc/environment does not expand variables, so write fully expanded values.
+      cat > /etc/environment <<ENVIRONMENT
+      MISE_DATA_DIR=/opt/mise
+      DOTNET_ROOT=$DOTNET_ROOT
+      PATH="$TOOL_PATH"
+      ENVIRONMENT
+
+      for svc in /etc/systemd/system/vsts.agent.*.service; do
+        [ -f "$svc" ] || continue
+        mkdir -p "$svc.d"
+        cat > "$svc.d/env.conf" <<ENVCONF
+      [Service]
+      Environment=MISE_DATA_DIR=/opt/mise
+      Environment=DOTNET_ROOT=$DOTNET_ROOT
+      Environment=PATH=$TOOL_PATH
+      ENVCONF
+      done
+
+      systemctl daemon-reload
+
   - path: /opt/azdo/install_agents.sh
     permissions: "0755"
     owner: root:root
@@ -45,10 +85,10 @@ write_files:
       PAT_FILE="/etc/azdo/pat"
       BASE_DIR="/opt/azdo"
 
-      # Ensure mise tools are available
-      export MISE_DATA_DIR=/opt/mise
-      export MISE_CONFIG_DIR=/etc/mise
-      export PATH="/opt/mise/shims:$PATH"
+      # Use direct paths to mise-installed tools (bypasses slow shims).
+      # Azure Pipelines systemd services do not read interactive shell startup files.
+      # shellcheck disable=SC1091
+      source /etc/profile.d/azdo-tools.sh
 
       mkdir -p "$${BASE_DIR}"
       chmod 750 "$${BASE_DIR}"
@@ -66,7 +106,7 @@ write_files:
 
         DOWNLOAD_URL="https://download.agent.dev.azure.com/agent/${azdo_agent_version}/vsts-agent-linux-x64-${azdo_agent_version}.tar.gz"
         echo "Downloading agent from: $${DOWNLOAD_URL}"
-        
+
         MAX_RETRIES=10
         RETRY_COUNT=0
         until curl -fsSL -o agent.tar.gz "$${DOWNLOAD_URL}"; do
@@ -84,10 +124,10 @@ write_files:
         export AGENT_ALLOW_RUNASROOT=1
         ./config.sh \
           --unattended \
-          --url "${azure_org_url}" \
+          --url "$${ORG_URL}" \
           --auth pat \
           --token "$(cat $${PAT_FILE})" \
-          --pool "${azure_agent_pool}" \
+          --pool "$${POOL}" \
           --agent "$${AGENT_NAME}" \
           --acceptTeeEula \
           --replace
@@ -101,36 +141,53 @@ runcmd:
   - [bash, -c, "ufw allow OpenSSH || true"]
   - [bash, -c, "ufw --force enable || true"]
 
-  # Install mise (system-wide)
+  # Install PowerShell and Azure CLI for Azure Pipelines scripts/tasks.
+  - [
+      bash,
+      -c,
+      '. /etc/os-release && curl -fsSL -o /tmp/packages-microsoft-prod.deb "https://packages.microsoft.com/config/ubuntu/$VERSION_ID/packages-microsoft-prod.deb" && dpkg -i /tmp/packages-microsoft-prod.deb && rm /tmp/packages-microsoft-prod.deb && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y powershell',
+    ]
+  - [bash, -c, "curl -sL https://aka.ms/InstallAzureCLIDeb | bash"]
+  - [
+      bash,
+      -c,
+      "az config set extension.use_dynamic_install=yes_without_prompt && az extension add --name azure-devops || true",
+    ]
+
+  # Install mise (system-wide).
   - [
       bash,
       -c,
       "curl https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh",
     ]
 
-  # Install Node.js and .NET using mise
-  - [bash, -c, "mkdir -p /etc/mise"]
+  # Install LD.Apport toolchain versions using mise. Use direct paths later, not mise shims.
   - [
       bash,
       -c,
-      "MISE_DATA_DIR=/opt/mise MISE_CONFIG_DIR=/etc/mise /usr/local/bin/mise use --global node@24 dotnet@10",
+      "MISE_DATA_DIR=/opt/mise /usr/local/bin/mise install node@${node_version} dotnet@${dotnet_version}",
     ]
 
-  # Ensure mise-installed tools are in the PATH for the agent installation and future shells
-  # NOTE: /etc/environment does not expand variables like $PATH; write a fully expanded PATH.
-  - [bash, -c, "echo 'MISE_DATA_DIR=/opt/mise' >> /etc/environment"]
-  - [bash, -c, "echo 'MISE_CONFIG_DIR=/etc/mise' >> /etc/environment"]
+  # Enable the package manager declared by LD.Apport.Frontend/package.json.
   - [
       bash,
       -c,
-      'echo ''PATH="/opt/mise/shims:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"'' >> /etc/environment',
+      '. /etc/profile.d/azdo-tools.sh && corepack enable && corepack prepare pnpm@${pnpm_version} --activate',
     ]
 
+  # Preinstall Chromium system dependencies for Playwright E2E jobs.
+  - [
+      bash,
+      -c,
+      '. /etc/profile.d/azdo-tools.sh && npx -y playwright@${playwright_version} install-deps chromium',
+    ]
+
+  - [bash, -c, "/opt/azdo/configure_agent_environment.sh"]
   - [bash, -c, "systemctl enable --now docker || true"]
   - [bash, -c, "systemctl enable --now fail2ban || true"]
   - [bash, -c, "usermod -aG docker azureuser || true"]
-  - [
-      bash,
-      -c,
-      'MISE_DATA_DIR=/opt/mise MISE_CONFIG_DIR=/etc/mise PATH="/opt/mise/shims:$PATH" /opt/azdo/install_agents.sh',
-    ]
+  - [bash, -c, "/opt/azdo/install_agents.sh"]
+
+  # Agent services do not read /etc/environment; give them explicit tool PATHs.
+  - [bash, -c, "/opt/azdo/configure_agent_environment.sh"]
+  - [bash, -c, "systemctl restart 'vsts.agent.*' || true"]

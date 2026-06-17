@@ -35,6 +35,10 @@ resource "hcloud_server" "agent" {
     agents_per_vm      = var.agents_per_vm
     agent_name_prefix  = var.agent_name_prefix
     azdo_agent_version = var.azdo_agent_version
+    dotnet_version     = var.dotnet_version
+    node_version       = var.node_version
+    pnpm_version       = var.pnpm_version
+    playwright_version = var.playwright_version
     ssh_public_key     = data.hcloud_ssh_key.this.public_key
   })
 

@@ -1,6 +1,8 @@
 # Hetzner Azure DevOps Agents (Terraform + Cloud-init)
 
-Disposable build agents on Hetzner Cloud using Terraform and cloud-init. Ubuntu 24.04 by default, SSH key-only login, optional multiple agents per VM, firewall restricted to SSH only. Installs Docker, Node.js 24 (APT), and .NET SDK 10 (APT) for running validation pipelines.
+Disposable build agents on Hetzner Cloud using Terraform and cloud-init. Ubuntu 24.04 by default, SSH key-only login, optional multiple agents per VM, firewall restricted to SSH only.
+
+The default image is tuned for the `LD.Apport` Azure Pipelines workload: Docker, PowerShell, Azure CLI, .NET SDK 10, Node.js 24, pnpm through corepack, and Chromium system dependencies for Playwright. .NET and Node are installed with `mise`, but the agent services use direct install paths instead of mise shims to avoid slow shim lookups during restores/builds.
 
 ## Files
 
@@ -8,7 +10,7 @@ Disposable build agents on Hetzner Cloud using Terraform and cloud-init. Ubuntu 
 - `providers.tf` — Hetzner provider
 - `variables.tf` — configurable inputs
 - `main.tf` — data lookup for SSH key, firewall, servers with user_data
-- `cloud-init.yaml.tftpl` — cloud-init to install Docker + Azure agent(s)
+- `cloud-init.yaml.tftpl` — cloud-init to install build tooling + Azure agent(s)
 - `outputs.tf` — IPs and names
 - `.gitignore` — ignores state, tfvars, etc.
 
@@ -24,11 +26,15 @@ Disposable build agents on Hetzner Cloud using Terraform and cloud-init. Ubuntu 
 - `azure_agent_pool` = `Default`
 - `image` = `ubuntu-24.04`
 - `location` = `nbg1`
-- `server_type` = `cx22`
+- `server_type` = `cpx42`
 - `vm_count` = `1`
 - `agents_per_vm` = `1` (set to `2+` to run multiple agents per VM)
 - `agent_name_prefix` = `hz-agent`
 - `azdo_agent_version` = `4.266.2` (pinned)
+- `dotnet_version` = `10.0.300` (matches `LD.Apport/mise.toml`)
+- `node_version` = `24.13.0`
+- `pnpm_version` = `11.5.0` (matches `LD.Apport.Frontend/package.json`)
+- `playwright_version` = `1.60.0` (used only to install Chromium OS dependencies; matches the current frontend lockfile)
 
 ## Usage
 
@@ -81,7 +87,8 @@ tofu plan
 
 ### Upgrades / refresh
 
-- Bump `image` or `azdo_agent_version`, then `terraform apply` (user_data changes recreate VMs for clean agents).
+- Bump `image`, `azdo_agent_version`, or a tool version variable, then `terraform apply` (user_data changes recreate VMs for clean agents).
+- To run an Azure Pipeline on these self-hosted agents, point the pipeline `pool` at `azure_agent_pool` instead of using `vmImage: ubuntu-latest` / `windows-latest`.
 
 ## Security notes
 
