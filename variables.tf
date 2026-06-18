@@ -5,7 +5,7 @@ variable "hcloud_token" {
 }
 
 variable "azure_pat" {
-  description = "Azure DevOps PAT with Agent Pools (Read & Manage)"
+  description = "Azure DevOps PAT used by Terraform to manage the Azure DevOps pool/queue and by cloud-init to register agents"
   type        = string
   sensitive   = true
 }
@@ -15,16 +15,22 @@ variable "azure_org_url" {
   type        = string
 }
 
-variable "azure_agent_pool" {
-  description = "Azure DevOps agent pool name"
+variable "azure_project_name" {
+  description = "Azure DevOps project name where the agent queue is authorized"
   type        = string
-  default     = "Default"
+  default     = "Lerums Djursjukhus"
+}
+
+variable "azure_agent_pool" {
+  description = "Dedicated Azure DevOps agent pool name managed by this configuration"
+  type        = string
+  default     = "LD.Apport-Hetzner"
 }
 
 variable "image" {
   description = "Hetzner image name"
   type        = string
-  default     = "ubuntu-24.04"
+  default     = "ubuntu-26.04"
 }
 
 variable "location" {
@@ -34,21 +40,31 @@ variable "location" {
 }
 
 variable "server_type" {
-  description = "Hetzner server type (e.g. cx22, cax11)"
+  description = "Hetzner server type (e.g. cx22, cx43, cax11)"
   type        = string
-  default     = "cpx42"
+  default     = "cx43"
 }
 
 variable "vm_count" {
   description = "Number of VMs to create"
   type        = number
   default     = 1
+
+  validation {
+    condition     = var.vm_count >= 1
+    error_message = "vm_count must be at least 1."
+  }
 }
 
 variable "agents_per_vm" {
   description = "How many Azure agents to run per VM"
   type        = number
   default     = 1
+
+  validation {
+    condition     = var.agents_per_vm >= 1
+    error_message = "agents_per_vm must be at least 1."
+  }
 }
 
 variable "agent_name_prefix" {
@@ -63,7 +79,7 @@ variable "ssh_key_name" {
 }
 
 variable "azdo_agent_version" {
-  description = "Pinned Azure DevOps agent version"
+  description = "Azure DevOps agent bootstrap version; the managed pool has auto_update enabled"
   type        = string
   default     = "4.266.2"
 }

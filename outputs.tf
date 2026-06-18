@@ -12,3 +12,18 @@ output "server_names" {
   description = "Server names"
   value       = [for s in hcloud_server.agent : s.name]
 }
+
+output "azure_agent_pool" {
+  description = "Azure DevOps agent pool managed by this configuration"
+  value       = azuredevops_agent_pool.this.name
+}
+
+output "azure_project_name" {
+  description = "Azure DevOps project where the queue is authorized"
+  value       = data.azuredevops_project.this.name
+}
+
+output "azure_agent_queue_id" {
+  description = "Azure DevOps project queue ID authorized for pipelines"
+  value       = azuredevops_agent_queue.this.id
+}

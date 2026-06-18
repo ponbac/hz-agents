@@ -1,0 +1,71 @@
+#!/bin/bash
+set -euo pipefail
+
+ORG_URL="${azure_org_url}"
+POOL="${azure_agent_pool}"
+PAT_FILE="/etc/azdo/pat"
+BASE_DIR="/opt/azdo"
+AGENT_USER="azdoagent"
+AGENT_GROUP="azdoagent"
+
+trap 'rm -f "$PAT_FILE"' EXIT
+
+# Use direct paths to mise-installed tools (bypasses slow shims).
+# Azure Pipelines systemd services do not read interactive shell startup files.
+# shellcheck disable=SC1091
+source /etc/profile.d/azdo-tools.sh
+
+install -d -m 0750 -o "$AGENT_USER" -g "$AGENT_GROUP" "$BASE_DIR"
+
+for i in $(seq 1 ${agents_per_vm}); do
+  AGENT_DIR="$BASE_DIR/agent$i"
+  AGENT_NAME="$(hostname)"
+  if [ ${agents_per_vm} -gt 1 ]; then
+    AGENT_NAME="$AGENT_NAME-$i"
+  fi
+
+  rm -rf "$AGENT_DIR"
+  install -d -m 0750 -o "$AGENT_USER" -g "$AGENT_GROUP" "$AGENT_DIR"
+  cd "$AGENT_DIR"
+
+  DOWNLOAD_URL="https://download.agent.dev.azure.com/agent/${azdo_agent_version}/vsts-agent-linux-x64-${azdo_agent_version}.tar.gz"
+  echo "Downloading agent from: $DOWNLOAD_URL"
+
+  MAX_RETRIES=10
+  RETRY_COUNT=0
+  until curl -fsSL -o agent.tar.gz "$DOWNLOAD_URL"; do
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+      echo "Failed to download agent after $MAX_RETRIES attempts. Exiting."
+      exit 1
+    fi
+    echo "Download failed (attempt $RETRY_COUNT/$MAX_RETRIES), retrying in 5 seconds..."
+    sleep 5
+  done
+  tar -zxf agent.tar.gz
+  rm agent.tar.gz
+  chown -R "$AGENT_USER:$AGENT_GROUP" "$AGENT_DIR"
+
+  install -m 0600 -o "$AGENT_USER" -g "$AGENT_GROUP" "$PAT_FILE" "$AGENT_DIR/.registration-token"
+  runuser -u "$AGENT_USER" -- bash -c '
+    set -euo pipefail
+    AGENT_DIR="$1"
+    ORG_URL="$2"
+    POOL="$3"
+    AGENT_NAME="$4"
+    cd "$AGENT_DIR"
+    trap "rm -f .registration-token" EXIT
+    VSTS_AGENT_INPUT_TOKEN="$(tr -d "\r\n" < .registration-token)" ./config.sh \
+      --unattended \
+      --url "$ORG_URL" \
+      --auth pat \
+      --pool "$POOL" \
+      --agent "$AGENT_NAME" \
+      --acceptTeeEula \
+      --replace
+  ' _ "$AGENT_DIR" "$ORG_URL" "$POOL" "$AGENT_NAME"
+
+  ./svc.sh install "$AGENT_USER"
+  /opt/azdo/configure_agent_environment.sh
+  ./svc.sh start
+done
