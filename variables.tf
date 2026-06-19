@@ -103,7 +103,13 @@ variable "pnpm_version" {
 }
 
 variable "playwright_version" {
-  description = "Playwright version used to preinstall Chromium system dependencies"
+  description = "Playwright version used to preinstall Chromium system dependencies and browser binaries"
   type        = string
   default     = "1.60.0"
+}
+
+variable "sql_server_image" {
+  description = "SQL Server container image pre-pulled for LD.Apport backend tests"
+  type        = string
+  default     = "mcr.microsoft.com/mssql/server:2025-CU2-ubuntu-22.04"
 }

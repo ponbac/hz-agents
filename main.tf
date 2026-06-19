@@ -80,6 +80,7 @@ resource "hcloud_server" "agent" {
     node_version                       = var.node_version
     pnpm_version                       = var.pnpm_version
     playwright_version                 = var.playwright_version
+    sql_server_image                   = var.sql_server_image
     ssh_public_key                     = data.hcloud_ssh_key.this.public_key
   })
 

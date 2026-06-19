@@ -64,8 +64,18 @@ write_files:
       export DOTNET_CLI_TELEMETRY_OPTOUT=1
       export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
       export NUGET_XMLDOC_MODE=skip
-      export COREPACK_HOME=/home/azdoagent/.cache/corepack
+      . /etc/azdo/ld-apport-cache-env.sh
       export PATH="/opt/mise/installs/dotnet/${dotnet_version}:/opt/mise/installs/node/${node_version}/bin:/home/azdoagent/.dotnet/tools:$PATH"
+
+  - path: /etc/azdo/ld-apport-cache-env.sh
+    permissions: "0644"
+    owner: root:root
+    content: |
+      export COREPACK_HOME=/home/azdoagent/.cache/corepack
+      export NUGET_PACKAGES=/home/azdoagent/.nuget/packages
+      export pnpm_config_cache=/home/azdoagent/.pnpm-store
+      export PLAYWRIGHT_BROWSERS_PATH=/home/azdoagent/.cache/ms-playwright
+      export LD_APPORT_CACHE_DIRS="/home/azdoagent/.cache $COREPACK_HOME $PLAYWRIGHT_BROWSERS_PATH /home/azdoagent/.nuget $NUGET_PACKAGES $pnpm_config_cache"
 
   - path: /opt/azdo/configure_agent_environment.sh
     permissions: "0755"
@@ -132,6 +142,8 @@ runcmd:
   - [bash, -c, "systemctl enable --now fail2ban || true"]
   - [bash, -c, "usermod -aG docker azureuser || true"]
   - [bash, -c, "usermod -aG docker azdoagent || true"]
-  - [bash, -c, "install -d -m 0755 -o azdoagent -g azdoagent /home/azdoagent/.cache /home/azdoagent/.cache/corepack /home/azdoagent/.dotnet /home/azdoagent/.dotnet/tools"]
+  - [bash, -c, ". /etc/azdo/ld-apport-cache-env.sh && install -d -m 0755 -o azdoagent -g azdoagent /home/azdoagent/.dotnet /home/azdoagent/.dotnet/tools $LD_APPORT_CACHE_DIRS"]
   - [bash, -c, "runuser -u azdoagent -- bash -lc '. /etc/profile.d/azdo-tools.sh && corepack prepare pnpm@${pnpm_version} --activate'"]
+  - [bash, -c, "runuser -u azdoagent -- bash -lc '. /etc/profile.d/azdo-tools.sh && npx -y playwright@${playwright_version} install chromium'"]
+  - [bash, -c, "for attempt in 1 2 3; do docker pull ${sql_server_image} && exit 0; sleep 10; done; echo 'WARNING: failed to pre-pull SQL Server image ${sql_server_image}' >&2; exit 0"]
   - [bash, -c, "/opt/azdo/install_agents.sh"]

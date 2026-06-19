@@ -2,7 +2,7 @@
 
 Disposable build agents on Hetzner Cloud using Terraform and cloud-init. Ubuntu 26.04 by default, SSH key-only login, optional multiple agents per VM, firewall restricted to SSH only.
 
-The default setup is tuned for the `LD.Apport` Azure Pipelines workload. Terraform creates the dedicated Azure DevOps agent pool/queue/authorization, then Hetzner VMs register self-hosted Linux agents into that pool. The image includes Docker, PowerShell, Azure CLI, .NET SDK 10, Node.js 24, pnpm through corepack, and Chromium system dependencies for Playwright. .NET and Node are installed with `mise`, but the agent services use direct install paths instead of mise shims to avoid slow shim lookups during restores/builds.
+The default setup is tuned for the `LD.Apport` Azure Pipelines workload. Terraform creates the dedicated Azure DevOps agent pool/queue/authorization, then Hetzner VMs register self-hosted Linux agents into that pool. The image includes Docker, PowerShell, Azure CLI, .NET SDK 10, Node.js 24, pnpm through corepack, Chromium system dependencies and browser binaries for Playwright, and a pre-pulled SQL Server test image. .NET and Node are installed with `mise`, but the agent services use direct install paths instead of mise shims to avoid slow shim lookups during restores/builds.
 
 ## Files
 
@@ -36,7 +36,8 @@ The default setup is tuned for the `LD.Apport` Azure Pipelines workload. Terrafo
 - `dotnet_version` = `10.0.300` (matches `LD.Apport/mise.toml`)
 - `node_version` = `24.13.0`
 - `pnpm_version` = `11.5.0` (matches `LD.Apport.Frontend/package.json`)
-- `playwright_version` = `1.60.0` (used only to install Chromium OS dependencies; matches the current frontend lockfile)
+- `playwright_version` = `1.60.0` (used to install Chromium OS dependencies and browser binaries; matches the current frontend lockfile)
+- `sql_server_image` = `mcr.microsoft.com/mssql/server:2025-CU2-ubuntu-22.04` (pre-pulled for backend integration tests)
 
 ## Usage
 
