@@ -3,7 +3,7 @@ set -euo pipefail
 
 TOOL_PATH="/opt/mise/installs/dotnet/${dotnet_version}:/opt/mise/installs/node/${node_version}/bin:/home/azdoagent/.dotnet/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 DOTNET_ROOT="/opt/mise/installs/dotnet/${dotnet_version}"
-COREPACK_HOME="/home/azdoagent/.cache/corepack"
+source /etc/azdo/ld-apport-cache-env.sh
 
 # /etc/environment does not expand variables, so write fully expanded values.
 cat > /etc/environment <<ENVIRONMENT
@@ -13,6 +13,9 @@ DOTNET_CLI_TELEMETRY_OPTOUT=1
 DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 NUGET_XMLDOC_MODE=skip
 COREPACK_HOME=$COREPACK_HOME
+NUGET_PACKAGES=$NUGET_PACKAGES
+pnpm_config_cache=$pnpm_config_cache
+PLAYWRIGHT_BROWSERS_PATH=$PLAYWRIGHT_BROWSERS_PATH
 PATH="$TOOL_PATH"
 ENVIRONMENT
 
@@ -27,6 +30,9 @@ Environment=DOTNET_CLI_TELEMETRY_OPTOUT=1
 Environment=DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 Environment=NUGET_XMLDOC_MODE=skip
 Environment=COREPACK_HOME=$COREPACK_HOME
+Environment=NUGET_PACKAGES=$NUGET_PACKAGES
+Environment=pnpm_config_cache=$pnpm_config_cache
+Environment=PLAYWRIGHT_BROWSERS_PATH=$PLAYWRIGHT_BROWSERS_PATH
 Environment=PATH=$TOOL_PATH
 ENVCONF
 done
