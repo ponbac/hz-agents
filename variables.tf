@@ -105,7 +105,7 @@ variable "pnpm_version" {
 variable "playwright_version" {
   description = "Playwright version used to preinstall Chromium system dependencies and browser binaries"
   type        = string
-  default     = "1.60.0"
+  default     = "1.61.0"
 }
 
 variable "sql_server_image" {
