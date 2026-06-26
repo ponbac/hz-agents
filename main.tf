@@ -6,6 +6,11 @@ locals {
     node_version   = var.node_version
   })))
 
+  configure_swap_script = indent(6, chomp(templatefile("${path.module}/scripts/configure-swap.sh.tftpl", {
+    swap_size       = var.swap_size
+    swap_swappiness = var.swap_swappiness
+  })))
+
   install_agents_script = indent(6, chomp(templatefile("${path.module}/scripts/install-agents.sh.tftpl", {
     azure_org_url      = var.azure_org_url
     azure_agent_pool   = var.azure_agent_pool
@@ -74,6 +79,7 @@ resource "hcloud_server" "agent" {
   user_data = templatefile("${path.module}/cloud-init.yaml.tftpl", {
     azure_pat                          = var.azure_pat
     configure_agent_environment_script = local.configure_agent_environment_script
+    configure_swap_script              = local.configure_swap_script
     dotnet_version                     = var.dotnet_version
     install_agents_script              = local.install_agents_script
     install_powershell_script          = local.install_powershell_script

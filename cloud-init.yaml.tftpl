@@ -83,6 +83,12 @@ write_files:
     content: |
       ${configure_agent_environment_script}
 
+  - path: /opt/azdo/configure_swap.sh
+    permissions: "0755"
+    owner: root:root
+    content: |
+      ${configure_swap_script}
+
   - path: /opt/azdo/install_powershell.sh
     permissions: "0755"
     owner: root:root
@@ -99,6 +105,9 @@ runcmd:
   - [bash, -c, "until ping -c 1 google.com; do sleep 2; done"]
   - [bash, -c, "ufw allow OpenSSH || true"]
   - [bash, -c, "ufw --force enable || true"]
+
+  # Add swap before installing heavy CI toolchains to absorb memory spikes.
+  - [bash, -c, "/opt/azdo/configure_swap.sh"]
 
   # Install PowerShell and Azure CLI for Azure Pipelines scripts/tasks.
   - [bash, -c, "/opt/azdo/install_powershell.sh"]

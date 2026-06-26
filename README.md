@@ -2,7 +2,7 @@
 
 Disposable build agents on Hetzner Cloud using Terraform and cloud-init. Ubuntu 26.04 by default, SSH key-only login, optional multiple agents per VM, firewall restricted to SSH only.
 
-The default setup is tuned for the `LD.Apport` Azure Pipelines workload. Terraform creates the dedicated Azure DevOps agent pool/queue/authorization, then Hetzner VMs register self-hosted Linux agents into that pool. The image includes Docker, PowerShell, Azure CLI, .NET SDK 10, Node.js 24, pnpm through corepack, Chromium system dependencies and browser binaries for Playwright, and a pre-pulled SQL Server test image. .NET and Node are installed with `mise`, but the agent services use direct install paths instead of mise shims to avoid slow shim lookups during restores/builds.
+The default setup is tuned for the `LD.Apport` Azure Pipelines workload. Terraform creates the dedicated Azure DevOps agent pool/queue/authorization, then Hetzner VMs register self-hosted Linux agents into that pool. The image includes Docker, PowerShell, Azure CLI, .NET SDK 10, Node.js 24, pnpm through corepack, Chromium system dependencies and browser binaries for Playwright, a pre-pulled SQL Server test image, and an 8G swapfile to absorb CI memory spikes. .NET and Node are installed with `mise`, but the agent services use direct install paths instead of mise shims to avoid slow shim lookups during restores/builds.
 
 ## Files
 
@@ -31,6 +31,8 @@ The default setup is tuned for the `LD.Apport` Azure Pipelines workload. Terrafo
 - `server_type` = `cx43`
 - `vm_count` = `1`
 - `agents_per_vm` = `1` (set to `2+` to run multiple agents per VM)
+- `swap_size` = `8G`
+- `swap_swappiness` = `10`
 - `agent_name_prefix` = `hz-agent`
 - `azdo_agent_version` = `4.266.2` (bootstrap version; the managed pool has Azure DevOps agent auto-update enabled)
 - `dotnet_version` = `10.0.300` (matches `LD.Apport/mise.toml`)

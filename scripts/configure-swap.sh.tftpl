@@ -1,0 +1,28 @@
+#!/bin/bash
+set -euo pipefail
+
+SWAP_FILE="/swapfile"
+SWAP_SIZE="${swap_size}"
+SWAPPINESS="${swap_swappiness}"
+
+echo "Configuring $SWAP_SIZE swap at $SWAP_FILE with vm.swappiness=$SWAPPINESS"
+
+if ! swapon --show=NAME --noheadings | awk '{ print $1 }' | grep -Fxq "$SWAP_FILE"; then
+  rm -f "$SWAP_FILE"
+  fallocate -l "$SWAP_SIZE" "$SWAP_FILE"
+  chmod 600 "$SWAP_FILE"
+  mkswap "$SWAP_FILE" >/dev/null
+  swapon "$SWAP_FILE"
+fi
+
+if ! awk -v file="$SWAP_FILE" '$1 == file && $3 == "swap" { found=1 } END { exit found ? 0 : 1 }' /etc/fstab; then
+  printf '%s none swap sw 0 0\n' "$SWAP_FILE" >> /etc/fstab
+fi
+
+cat > /etc/sysctl.d/99-ci-swap.conf <<EOF
+vm.swappiness=$SWAPPINESS
+EOF
+sysctl -p /etc/sysctl.d/99-ci-swap.conf
+
+swapon --show
+free -h

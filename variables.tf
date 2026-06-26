@@ -67,6 +67,23 @@ variable "agents_per_vm" {
   }
 }
 
+variable "swap_size" {
+  description = "Swapfile size configured on each VM to absorb CI memory spikes"
+  type        = string
+  default     = "8G"
+}
+
+variable "swap_swappiness" {
+  description = "Linux vm.swappiness value for CI agents"
+  type        = number
+  default     = 10
+
+  validation {
+    condition     = var.swap_swappiness >= 0 && var.swap_swappiness <= 100
+    error_message = "swap_swappiness must be between 0 and 100."
+  }
+}
+
 variable "agent_name_prefix" {
   description = "Prefix for Azure agent names"
   type        = string
