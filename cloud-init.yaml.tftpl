@@ -60,6 +60,7 @@ write_files:
     owner: root:root
     content: |
       export MISE_DATA_DIR=/opt/mise
+      export MISE_SKIP_RESHIM=1
       export DOTNET_ROOT=/opt/mise/installs/dotnet/${dotnet_version}
       export DOTNET_CLI_TELEMETRY_OPTOUT=1
       export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1

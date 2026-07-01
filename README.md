@@ -2,7 +2,7 @@
 
 Disposable build agents on Hetzner Cloud using Terraform and cloud-init. Ubuntu 26.04 by default, SSH key-only login, optional multiple agents per VM, firewall restricted to SSH only.
 
-The default setup is tuned for the `LD.Apport` Azure Pipelines workload. Terraform creates the dedicated Azure DevOps agent pool/queue/authorization, then Hetzner VMs register self-hosted Linux agents into that pool. The image includes Docker, PowerShell, Azure CLI, .NET SDK 10, Node.js 24, pnpm through corepack, Chromium system dependencies and browser binaries for Playwright, a pre-pulled SQL Server test image, and an 8G swapfile to absorb CI memory spikes. .NET and Node are installed with `mise`, but the agent services use direct install paths instead of mise shims to avoid slow shim lookups during restores/builds.
+The default setup is tuned for the `LD.Apport` Azure Pipelines workload. Terraform creates the dedicated Azure DevOps agent pool/queue/authorization, then Hetzner VMs register self-hosted Linux agents into that pool. The image includes Docker, PowerShell, Azure CLI, .NET SDK 10, Node.js 24, pnpm through corepack, Chromium system dependencies and browser binaries for Playwright, a pre-pulled SQL Server test image, and an 8G swapfile to absorb CI memory spikes. .NET and Node are installed with `mise`, but the agent services use direct install paths and disable automatic npm-triggered `mise reshim` to avoid slow shim lookups and writes to root-owned shims during restores/builds/deploys.
 
 ## Files
 

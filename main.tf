@@ -95,5 +95,11 @@ resource "hcloud_server" "agent" {
     ipv6_enabled = true
   }
 
+  lifecycle {
+    # The hcloud provider currently refreshes location/datacenter as empty for
+    # existing servers, which otherwise causes a perpetual replacement plan.
+    ignore_changes = [location]
+  }
+
   depends_on = [azuredevops_pipeline_authorization.this]
 }
