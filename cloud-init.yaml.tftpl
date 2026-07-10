@@ -137,7 +137,7 @@ runcmd:
   - [
       bash,
       -c,
-      'COREPACK_HOME=/root/.cache/corepack /opt/mise/installs/node/${node_version}/bin/corepack enable',
+      '. /etc/profile.d/azdo-tools.sh && COREPACK_HOME=/root/.cache/corepack corepack enable',
     ]
 
   # Preinstall Chromium system dependencies for Playwright E2E jobs.
