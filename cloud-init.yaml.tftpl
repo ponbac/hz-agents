@@ -133,11 +133,11 @@ runcmd:
       "MISE_DATA_DIR=/opt/mise /usr/local/bin/mise install node@${node_version} dotnet@${dotnet_version}",
     ]
 
-  # Enable the package manager declared by LD.Apport.Frontend/package.json.
+  # Install Corepack's shims as root. Populate the agent cache as azdoagent below.
   - [
       bash,
       -c,
-      '. /etc/profile.d/azdo-tools.sh && corepack enable && corepack prepare pnpm@${pnpm_version} --activate',
+      'COREPACK_HOME=/root/.cache/corepack /opt/mise/installs/node/${node_version}/bin/corepack enable',
     ]
 
   # Preinstall Chromium system dependencies for Playwright E2E jobs.

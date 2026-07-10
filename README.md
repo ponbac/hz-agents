@@ -37,7 +37,7 @@ The default setup is tuned for the `LD.Apport` Azure Pipelines workload. Terrafo
 - `azdo_agent_version` = `4.266.2` (bootstrap version; the managed pool has Azure DevOps agent auto-update enabled)
 - `dotnet_version` = `10.0.300` (matches `LD.Apport/mise.toml`)
 - `node_version` = `24.13.0`
-- `pnpm_version` = `11.5.0` (matches `LD.Apport.Frontend/package.json`)
+- `pnpm_version` = `11.10.0` (matches the root and frontend `packageManager` declarations)
 - `playwright_version` = `1.61.0` (used to install Chromium OS dependencies and browser binaries; matches the current frontend lockfile; 1.61+ supports Ubuntu 26.04)
 - `sql_server_image` = `mcr.microsoft.com/mssql/server:2025-CU2-ubuntu-22.04` (pre-pulled for backend integration tests)
 

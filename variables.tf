@@ -116,7 +116,7 @@ variable "node_version" {
 variable "pnpm_version" {
   description = "Pinned pnpm version prepared through corepack"
   type        = string
-  default     = "11.5.0"
+  default     = "11.10.0"
 }
 
 variable "playwright_version" {
