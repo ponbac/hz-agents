@@ -19,6 +19,11 @@ locals {
   })))
 
   install_powershell_script = indent(6, chomp(file("${path.module}/scripts/install-powershell.sh")))
+
+  install_deployment_clis_script = indent(6, chomp(templatefile("${path.module}/scripts/install-deployment-clis.sh.tftpl", {
+    aspire_cli_version = var.aspire_cli_version
+    vercel_cli_version = var.vercel_cli_version
+  })))
 }
 
 data "hcloud_ssh_key" "this" {
@@ -82,6 +87,7 @@ resource "hcloud_server" "agent" {
     configure_swap_script              = local.configure_swap_script
     dotnet_version                     = var.dotnet_version
     install_agents_script              = local.install_agents_script
+    install_deployment_clis_script     = local.install_deployment_clis_script
     install_powershell_script          = local.install_powershell_script
     node_version                       = var.node_version
     pnpm_version                       = var.pnpm_version
