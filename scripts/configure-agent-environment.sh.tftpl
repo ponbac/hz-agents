@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-TOOL_PATH="/opt/mise/installs/dotnet/${dotnet_version}:/opt/mise/installs/node/${node_version}/bin:/home/azdoagent/.dotnet/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+TOOL_PATH="/opt/npm-global/bin:/opt/mise/installs/dotnet/${dotnet_version}:/opt/mise/installs/node/${node_version}/bin:/home/azdoagent/.dotnet/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 DOTNET_ROOT="/opt/mise/installs/dotnet/${dotnet_version}"
 source /etc/azdo/ld-apport-cache-env.sh
 

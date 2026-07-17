@@ -66,7 +66,7 @@ write_files:
       export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
       export NUGET_XMLDOC_MODE=skip
       . /etc/azdo/ld-apport-cache-env.sh
-      export PATH="/opt/mise/installs/dotnet/${dotnet_version}:/opt/mise/installs/node/${node_version}/bin:/home/azdoagent/.dotnet/tools:$PATH"
+      export PATH="/opt/npm-global/bin:/opt/mise/installs/dotnet/${dotnet_version}:/opt/mise/installs/node/${node_version}/bin:/home/azdoagent/.dotnet/tools:$PATH"
 
   - path: /etc/azdo/ld-apport-cache-env.sh
     permissions: "0644"
@@ -95,6 +95,12 @@ write_files:
     owner: root:root
     content: |
       ${install_powershell_script}
+
+  - path: /opt/azdo/install_deployment_clis.sh
+    permissions: "0755"
+    owner: root:root
+    content: |
+      ${install_deployment_clis_script}
 
   - path: /opt/azdo/install_agents.sh
     permissions: "0755"
@@ -132,6 +138,9 @@ runcmd:
       -c,
       "MISE_DATA_DIR=/opt/mise /usr/local/bin/mise install node@${node_version} dotnet@${dotnet_version}",
     ]
+
+  # Install pinned deployment CLIs outside the agent user's writable directories.
+  - [bash, -c, "/opt/azdo/install_deployment_clis.sh"]
 
   # Install Corepack's shims as root. Populate the agent cache as azdoagent below.
   - [

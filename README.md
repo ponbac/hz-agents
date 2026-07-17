@@ -2,7 +2,7 @@
 
 Disposable build agents on Hetzner Cloud using Terraform and cloud-init. Ubuntu 26.04 by default, SSH key-only login, optional multiple agents per VM, firewall restricted to SSH only.
 
-The default setup is tuned for the `LD.Apport` Azure Pipelines workload. Terraform creates the dedicated Azure DevOps agent pool/queue/authorization, then Hetzner VMs register self-hosted Linux agents into that pool. The image includes Docker, PowerShell, Azure CLI, .NET SDK 10, Node.js 24, pnpm through corepack, Chromium system dependencies and browser binaries for Playwright, a pre-pulled SQL Server test image, and an 8G swapfile to absorb CI memory spikes. .NET and Node are installed with `mise`, but the agent services use direct install paths and disable automatic npm-triggered `mise reshim` to avoid slow shim lookups and writes to root-owned shims during restores/builds/deploys.
+The default setup is tuned for the `LD.Apport` Azure Pipelines workload. Terraform creates the dedicated Azure DevOps agent pool/queue/authorization, then Hetzner VMs register self-hosted Linux agents into that pool. The image includes Docker, PowerShell, Azure CLI, .NET SDK 10, Node.js 24, pnpm through corepack, Aspire CLI, Vercel CLI, Chromium system dependencies and browser binaries for Playwright, a pre-pulled SQL Server test image, and an 8G swapfile to absorb CI memory spikes. .NET and Node are installed with `mise`, while the deployment CLIs are installed into a root-owned npm prefix. The agent services use direct install paths and disable automatic npm-triggered `mise reshim` to avoid slow shim lookups and writes to root-owned shims during restores/builds/deploys.
 
 ## Files
 
@@ -38,6 +38,8 @@ The default setup is tuned for the `LD.Apport` Azure Pipelines workload. Terrafo
 - `dotnet_version` = `10.0.300` (matches `LD.Apport/mise.toml`)
 - `node_version` = `24.13.0`
 - `pnpm_version` = `11.10.0` (matches the root and frontend `packageManager` declarations)
+- `aspire_cli_version` = `13.4.3` (matches the Aspire deployment pipelines)
+- `vercel_cli_version` = `54.18.7` (matches the Vercel deployment pipelines)
 - `playwright_version` = `1.61.0` (used to install Chromium OS dependencies and browser binaries; matches the current frontend lockfile; 1.61+ supports Ubuntu 26.04)
 - `sql_server_image` = `mcr.microsoft.com/mssql/server:2025-CU2-ubuntu-22.04` (pre-pulled for backend integration tests)
 

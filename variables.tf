@@ -119,6 +119,18 @@ variable "pnpm_version" {
   default     = "11.10.0"
 }
 
+variable "aspire_cli_version" {
+  description = "Pinned Aspire CLI version installed for deployment pipelines"
+  type        = string
+  default     = "13.4.3"
+}
+
+variable "vercel_cli_version" {
+  description = "Pinned Vercel CLI version installed for frontend deployments"
+  type        = string
+  default     = "54.18.7"
+}
+
 variable "playwright_version" {
   description = "Playwright version used to preinstall Chromium system dependencies and browser binaries"
   type        = string

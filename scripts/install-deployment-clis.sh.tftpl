@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+. /etc/profile.d/azdo-tools.sh
+
+npm_prefix=/opt/npm-global
+install -d -m 0755 -o root -g root "$npm_prefix"
+
+npm install \
+  --global \
+  --prefix "$npm_prefix" \
+  --no-audit \
+  --no-fund \
+  "@microsoft/aspire-cli@${aspire_cli_version}" \
+  "vercel@${vercel_cli_version}"
+
+actual_aspire_version="$(aspire --version | cut -d+ -f1)"
+test "$actual_aspire_version" = "${aspire_cli_version}"
+
+actual_vercel_version="$(vercel --version | tr -d '\r')"
+test "$actual_vercel_version" = "${vercel_cli_version}"
