@@ -21,6 +21,7 @@ locals {
   install_powershell_script = indent(6, chomp(file("${path.module}/scripts/install-powershell.sh")))
 
   install_deployment_clis_script = indent(6, chomp(templatefile("${path.module}/scripts/install-deployment-clis.sh.tftpl", {
+    bicep_cli_version  = var.bicep_cli_version
     aspire_cli_version = var.aspire_cli_version
     vercel_cli_version = var.vercel_cli_version
   })))

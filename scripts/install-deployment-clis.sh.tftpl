@@ -4,7 +4,13 @@ set -euo pipefail
 . /etc/profile.d/azdo-tools.sh
 
 npm_prefix=/opt/npm-global
+agent_user=azdoagent
+agent_home=/home/azdoagent
+bicep_download="$(mktemp)"
+trap 'rm -f "$bicep_download"' EXIT
+
 install -d -m 0755 -o root -g root "$npm_prefix"
+install -d -m 0755 -o "$agent_user" -g "$agent_user" "$agent_home"
 
 npm install \
   --global \
@@ -13,6 +19,22 @@ npm install \
   --no-fund \
   "@microsoft/aspire-cli@${aspire_cli_version}" \
   "vercel@${vercel_cli_version}"
+
+curl -fsSL \
+  --output "$bicep_download" \
+  "https://downloads.bicep.azure.com/v${bicep_cli_version}/bicep-linux-x64"
+install -m 0755 -o root -g root "$bicep_download" /usr/local/bin/bicep
+
+actual_bicep_version="$(
+  runuser -u "$agent_user" -- env \
+    HOME="$agent_home" \
+    TF_BUILD=True \
+    az bicep version --only-show-errors |
+    awk '/^Bicep CLI version / { print $4; exit }'
+)"
+test "$actual_bicep_version" = "${bicep_cli_version}"
+test -x /usr/local/bin/bicep
+test "$(stat -c '%U:%G' /usr/local/bin/bicep)" = "root:root"
 
 actual_aspire_version="$(aspire --version | cut -d+ -f1)"
 test "$actual_aspire_version" = "${aspire_cli_version}"

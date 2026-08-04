@@ -119,6 +119,12 @@ variable "pnpm_version" {
   default     = "11.10.0"
 }
 
+variable "bicep_cli_version" {
+  description = "Pinned Bicep CLI version installed for Azure infrastructure deployments"
+  type        = string
+  default     = "0.43.8"
+}
+
 variable "aspire_cli_version" {
   description = "Pinned Aspire CLI version installed for deployment pipelines"
   type        = string

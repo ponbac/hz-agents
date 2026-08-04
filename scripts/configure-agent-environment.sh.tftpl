@@ -3,6 +3,7 @@ set -euo pipefail
 
 TOOL_PATH="/opt/npm-global/bin:/opt/mise/installs/dotnet/${dotnet_version}:/opt/mise/installs/node/${node_version}/bin:/home/azdoagent/.dotnet/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 DOTNET_ROOT="/opt/mise/installs/dotnet/${dotnet_version}"
+AGENT_HOME="/home/azdoagent"
 source /etc/azdo/ld-apport-cache-env.sh
 
 # /etc/environment does not expand variables, so write fully expanded values.
@@ -25,6 +26,7 @@ for svc in /etc/systemd/system/vsts.agent.*.service; do
   mkdir -p "$svc.d"
   cat > "$svc.d/env.conf" <<ENVCONF
 [Service]
+Environment=HOME=$AGENT_HOME
 Environment=MISE_DATA_DIR=/opt/mise
 Environment=MISE_SKIP_RESHIM=1
 Environment=DOTNET_ROOT=$DOTNET_ROOT
