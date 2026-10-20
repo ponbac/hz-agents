@@ -20,6 +20,8 @@ locals {
 
   install_powershell_script = indent(6, chomp(file("${path.module}/scripts/install-powershell.sh")))
 
+  sweep_ci_docker_script = indent(6, chomp(file("${path.module}/scripts/sweep-ci-docker.sh")))
+
   install_deployment_clis_script = indent(6, chomp(templatefile("${path.module}/scripts/install-deployment-clis.sh.tftpl", {
     bicep_cli_version  = var.bicep_cli_version
     aspire_cli_version = var.aspire_cli_version
@@ -90,6 +92,7 @@ resource "hcloud_server" "agent" {
     install_agents_script              = local.install_agents_script
     install_deployment_clis_script     = local.install_deployment_clis_script
     install_powershell_script          = local.install_powershell_script
+    sweep_ci_docker_script             = local.sweep_ci_docker_script
     node_version                       = var.node_version
     pnpm_version                       = var.pnpm_version
     playwright_version                 = var.playwright_version

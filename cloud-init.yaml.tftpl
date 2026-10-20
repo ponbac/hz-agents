@@ -96,6 +96,39 @@ write_files:
     content: |
       ${install_powershell_script}
 
+  - path: /opt/azdo/sweep_ci_docker.sh
+    permissions: "0755"
+    owner: root:root
+    content: |
+      ${sweep_ci_docker_script}
+
+  - path: /etc/systemd/system/sweep-ci-docker.service
+    permissions: "0644"
+    owner: root:root
+    content: |
+      [Unit]
+      Description=Remove stale CI Docker containers and caches
+      Requires=docker.service
+      After=docker.service
+
+      [Service]
+      Type=oneshot
+      ExecStart=/opt/azdo/sweep_ci_docker.sh
+
+  - path: /etc/systemd/system/sweep-ci-docker.timer
+    permissions: "0644"
+    owner: root:root
+    content: |
+      [Unit]
+      Description=Hourly sweep of stale CI Docker containers and caches
+
+      [Timer]
+      OnCalendar=hourly
+      Persistent=true
+
+      [Install]
+      WantedBy=timers.target
+
   - path: /opt/azdo/install_deployment_clis.sh
     permissions: "0755"
     owner: root:root
@@ -158,6 +191,7 @@ runcmd:
 
   - [bash, -c, "/opt/azdo/configure_agent_environment.sh"]
   - [bash, -c, "systemctl enable --now docker || true"]
+  - [bash, -c, "systemctl daemon-reload && systemctl enable --now sweep-ci-docker.timer"]
   - [bash, -c, "systemctl enable --now fail2ban || true"]
   - [bash, -c, "usermod -aG docker azureuser || true"]
   - [bash, -c, "usermod -aG docker azdoagent || true"]

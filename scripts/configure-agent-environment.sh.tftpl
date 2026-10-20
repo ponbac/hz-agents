@@ -39,6 +39,13 @@ Environment=pnpm_config_cache=$pnpm_config_cache
 Environment=PLAYWRIGHT_BROWSERS_PATH=$PLAYWRIGHT_BROWSERS_PATH
 Environment=PATH=$TOOL_PATH
 ENVCONF
+  # Keep the agent online when a job is OOM-killed, and bring it back if the listener itself dies.
+  cat > "$svc.d/restart.conf" <<RESTARTCONF
+[Service]
+OOMPolicy=continue
+Restart=on-failure
+RestartSec=30
+RESTARTCONF
 done
 
 systemctl daemon-reload
